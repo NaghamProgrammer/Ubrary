@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="../static/css/login.css" />
+    <title>Register</title>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="logo">
+        <h2>Ubrary</h2>
+      </div>
+      <div class="navmenu">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="Categories.html">Categories</a></li>
+          <li><a href="aboutus.html">About us</a></li>
+        </ul>
+      </div>
+    </nav>
+    <section>
+      <div class="Form-Box_ Register-Form_">
+        <div class="Form-Value_">
+          <form id="registerForm">
+            <h2>Register</h2>
+            <div class="Inputbox_">
+              <ion-icon name="person-outline"></ion-icon>
+              <input type="text" id="username" required />
+              <label>Username</label>
+            </div>
+            <div class="Inputbox_">
+              <ion-icon name="mail-outline"></ion-icon>
+              <input type="email" id="email" required />
+              <label>Email</label>
+            </div>
+            <div class="Inputbox_">
+              <ion-icon name="lock-closed-outline"></ion-icon>
+              <input type="password" id="password" required />
+              <label>Password</label>
+            </div>
+            <div class="Inputbox_">
+              <ion-icon name="lock-closed-outline"></ion-icon>
+              <input type="password" id="confirmPassword" required />
+              <label>Confirm Password</label>
+            </div>
+            <div class="RoleSelection">
+              <h3>Select Your Role:</h3>
+              <div class="radio-group">
+                <label class="radio-option">
+                  <input type="radio" name="userRole" value="user" required />
+                  <span class="radio-checkmark"></span>
+                  User
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="userRole" value="admin" required />
+                  <span class="radio-checkmark"></span>
+                  Admin
+                </label>
+              </div>
+            </div>
+            <div class="Terms_">
+              <label>
+                <input type="checkbox" id="terms" required />
+                I agree to the <a href="#">Terms & Conditions</a>
+              </label>
+            </div>
+            <button type="submit" id="registerButton">Register</button>
+            <div class="Login_">
+              <p>Already have an account? <a href="login.html">Login</a></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+    <script src="../static/js/api.js"></script>
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"
+    ></script>
+    <script src="../static/js/register.js"></script>
+  </body>
+</html>
