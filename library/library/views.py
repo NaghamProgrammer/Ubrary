@@ -1,21 +1,25 @@
+from django.contrib.auth import get_user_model, authenticate, login
+from django.db import IntegrityError
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.utils import timezone
+
 from rest_framework import viewsets, generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
-from .permissions import IsCustomAdmin
-from django.contrib.auth import get_user_model, authenticate, login
-from django.http import JsonResponse
-from django.shortcuts import render
-from django.db import IntegrityError
+
 from .models import Book, BorrowedBook, FavoriteBook, Category
 from .serializers import (
     BookSerializer, BorrowedBookSerializer,
     FavoriteBookSerializer, UserSerializer,
     AdminBookSerializer, AdminUserSerializer, CategorySerializer
 )
+from .permissions import IsCustomAdmin
+
 import uuid
 import datetime
-from django.utils import timezone
+
 
 User = get_user_model()
 
@@ -156,22 +160,52 @@ class BorrowedBookView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = BorrowedBookSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        book_id = request.data.get('book')
 
+        # Check if the user has already borrowed this book before
+        try:
+            borrowed_book = BorrowedBook.objects.get(user=user, book_id=book_id)
+            if borrowed_book.returned:
+                # Update the existing record
+                borrowed_book.returned = False
+                borrowed_book.return_date = None
+                borrowed_book.borrow_date = timezone.now().date()
+                borrowed_book.save()
+
+                serializer = BorrowedBookSerializer(borrowed_book)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"error": "This book is already borrowed and not yet returned."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except BorrowedBook.DoesNotExist:
+            # Proceed with normal creation if no record exists
+            serializer = BorrowedBookSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     def patch(self, request):
         book_id = request.data.get("book_id")
+
+        if not book_id:
+            return Response({"error": "book_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             borrowed_book = BorrowedBook.objects.get(user=request.user, book_id=book_id, returned=False)
             borrowed_book.returned = True
             borrowed_book.return_date = timezone.now().date()
             borrowed_book.save()
-            return Response({"message": "Book returned"}, status=200)
+
+        
+            serializer = BorrowedBookSerializer(borrowed_book)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
         except BorrowedBook.DoesNotExist:
-            return Response({"error": "No such borrowed book"}, status=404)
+            return Response({"error": "No borrowed book found to return."}, status=status.HTTP_404_NOT_FOUND)
 
 class FavoriteBookView(APIView):
     permission_classes = [IsAuthenticated]
@@ -182,20 +216,23 @@ class FavoriteBookView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = FavoriteBookSerializer(data=request.data)
+        serializer = FavoriteBookSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request):
-        book_id = request.data.get("book_id")
+class FavoriteBookDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, book_id):
         try:
             favorite = FavoriteBook.objects.get(user=request.user, book_id=book_id)
             favorite.delete()
-            return Response({"message": "Removed from favorites"}, status=204)
+            return Response({"message": "Removed from favorites"}, status=status.HTTP_204_NO_CONTENT)
         except FavoriteBook.DoesNotExist:
-            return Response({"error": "Favorite book not found"}, status=404)
+            return Response({"error": "Favorite book not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = User.objects.all()
@@ -229,16 +266,23 @@ class AdminBookViewSet(viewsets.ModelViewSet):
         return super().update(request,*args, **kwargs)
 
     def destroy(self, request, pk=None, *args, **kwargs):
-        book = self.get_object()
-        book_id = book.id
-        book_title = book.title
-        book.delete()
-        return Response({
-            "message": f"Book '{book_title}' (ID: {book_id}) has been deleted successfully"
+        try:
+            book = self.get_object()
+            book_id = book.id
+            book_title = book.title
+            book.delete()
+            return Response({
+                "message": f"Book '{book_title}' (ID: {book_id}) deleted successfully"
             }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "error": f"Failed to delete book: {str(e)}"
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 def borrowed_books_page(request):
     return render(request, 'borrowed_books.html')
 
 def favorite_books_page(request):
     return render(request, 'favorite_books.html')
+
+

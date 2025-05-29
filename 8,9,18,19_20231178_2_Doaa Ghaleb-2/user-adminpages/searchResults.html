@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - Ubrary</title>
+    <link rel="stylesheet" href="userPage.css">
+</head>
+<body>
+    <header>
+       <nav class="navbar">
+        <div class="logo">
+            <h2>Ubrary</h2>
+        </div>
+        <div class="navmenu">
+            <ul>
+                <li class="active"><a href="userPage.html">Home</a></li>
+                <li><a href="borrowed.html">Borrowed</a></li>
+                <li><a href="favourites.html">Favourites</a></li>
+            </ul>
+        </div>
+           <a href="../landingpage/index.html" class="auth-button">Log out</a>
+    </nav>
+    </header>
+
+    <div class="search-hero">
+        <div class="search-container">
+            <img src="magnifier.png" alt="Search" class="magnifier-icon">
+            <input type="text" id="search" placeholder="Search book by Title/Author/Category">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 id="results-header">Found Books:</h2>
+        <div class="books-grid" id="search-results">
+            <!-- Results will be inserted here by JavaScript -->
+        </div>
+    </div>
+
+   <script src="bookManager.js"></script>
+   <script src="searchResults.js"></script>
+
+</body>
+</html>
