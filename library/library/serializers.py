@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Book, BorrowedBook, FavoriteBook, Category
+import base64
+
 
 User = get_user_model()
 
@@ -54,34 +56,62 @@ class BookSerializer(serializers.ModelSerializer):
 
 
 class AdminBookSerializer(serializers.ModelSerializer):
-    categories = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Category.objects.all()
-    )
-    added_by = UserSerializer(read_only=True)
+    cover = serializers.ImageField(write_only=True, required=False) 
+    cover_string = serializers.CharField(read_only=True)  
 
     class Meta:
         model = Book
         fields = '__all__'
-        read_only_fields = ['id', 'added_by']
 
+    def create(self, validated_data):
+        image_file = validated_data.pop('cover', None)
+        if image_file:
+            
+            image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            validated_data['cover'] = image_data
+        return super().create(validated_data)
 
 
 class BorrowedBookSerializer(serializers.ModelSerializer):
-    book = BookSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
+    # Write-only field
+    book = serializers.PrimaryKeyRelatedField(
+        queryset=Book.objects.all(), write_only=True
+    )
+
+    # Read-only fields (flat)
+    book_id = serializers.IntegerField(source='book.id', read_only=True)
+    title = serializers.CharField(source='book.title', read_only=True)
+    author = serializers.CharField(source='book.author', read_only=True)
+    cover_url = serializers.CharField(source='book.cover_url', read_only=True)
 
     class Meta:
         model = BorrowedBook
-        fields = '__all__'
-        read_only_fields = ['user']
+        fields = ['book', 'book_id', 'title', 'author', 'cover_url', 'borrow_date', 'return_date', 'returned']
+        read_only_fields = ['book_id', 'title', 'author', 'cover_url', 'borrow_date', 'return_date', 'returned']
+
+
+
 
 
 class FavoriteBookSerializer(serializers.ModelSerializer):
-    book = BookSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
+    # Write-only book field for POST
+    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all(), write_only=True)
+
+    # Flattened book fields for GET responses (read-only)
+    book_id = serializers.IntegerField(source='book.id', read_only=True)
+    book_title = serializers.CharField(source='book.title', read_only=True)
+    book_author = serializers.CharField(source='book.author', read_only=True)
+    book_cover_url = serializers.CharField(source='book.cover_url', read_only=True)
 
     class Meta:
         model = FavoriteBook
-        fields = '__all__'
-        read_only_fields = ['user']
+        fields = ['book', 'book_id', 'book_title', 'book_author', 'book_cover_url']
+        read_only_fields = ['book_id', 'book_title', 'book_author', 'book_cover_url']
+
+    def validate(self, data):
+        user = self.context['request'].user
+        book = data.get('book')
+        if FavoriteBook.objects.filter(user=user, book=book).exists():
+            raise serializers.ValidationError('You have already favorited this book.')
+        return data
+

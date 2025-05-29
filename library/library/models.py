@@ -57,12 +57,14 @@ class Category(models.Model):
 # ---------------------
 # BOOK
 # ---------------------
+import base64
+
 class Book(models.Model):
     # id = models.CharField(max_length=5, primary_key=True)  # Make sure to generate IDs consistently
     title = models.CharField(max_length=100)
     author = models.CharField(max_length=100)
     categories = models.ManyToManyField(Category, related_name='books')
-    cover = models.ImageField(upload_to='book_covers/')
+    cover = models.TextField(blank=True, null=True)  # Store base64 string here
     description = models.TextField()
     published_date = models.DateField()
     number_of_copies = models.PositiveIntegerField(default=1)
@@ -84,6 +86,19 @@ class Book(models.Model):
 
     def is_available(self):
         return self.available_copies() > 0
+
+    def set_cover_from_file(self, file):
+        """Utility to convert an uploaded image file to base64 and save it"""
+        if file:
+            encoded_string = base64.b64encode(file.read()).decode('utf-8')
+            self.cover = encoded_string
+
+    def get_cover_image_data(self):
+        """Return base64 string to be used in HTML img src"""
+        if self.cover:
+            return f"data:image/jpeg;base64,{self.cover}"
+        return None
+
 
 
 # ---------------------

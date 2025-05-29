@@ -8,7 +8,7 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: url('background6.jpg') no-repeat center center fixed;
+    background: url(../asset/background6.jpg) no-repeat center center fixed;
     background-size: cover;
     background-color: #f4f4f479;
 }

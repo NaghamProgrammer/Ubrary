@@ -1,10 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    SignupView, LoginView, BookViewSet, BorrowedBookView, FavoriteBookView,
+    SignupView, LoginView, BookViewSet, BorrowedBookView, FavoriteBookView, FavoriteBookDeleteView,
     UserListCreateView, UserDetailView, AdminUserViewSet,
     AdminBookViewSet, CategoryViewSet, borrowed_books_page, 
-    favorite_books_page, PasswordResetRequestView, PasswordResetConfirmView
+    favorite_books_page, PasswordResetRequestView, PasswordResetConfirmView, 
 )
 from django.contrib import admin
 
@@ -31,9 +31,13 @@ urlpatterns = [
     path('api/users/', UserListCreateView.as_view(), name='user-list'),
     path('api/users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
     path('api/borrowed-books/', BorrowedBookView.as_view(), name='api-borrowed-books'),
+
+    # Favorite books routes with delete by book_id in URL
     path('api/favorite-books/', FavoriteBookView.as_view(), name='api-favorite-books'),
+    path('api/favorite-books/<int:book_id>/', FavoriteBookDeleteView.as_view(), name='favorite-book-delete'),
 
     # Page views
     path('borrowed-books/', borrowed_books_page, name='page-borrowed-books'),
     path('favorite-books/', favorite_books_page, name='page-favorite-books'),
+
 ]

@@ -22,21 +22,16 @@
                 </ul>
             </div>
             
-            <a href="../landingpage/index.html" class="auth-button">Log out</a>
+            <a href="index.html" class="auth-button">Log out</a>
         </nav>
     </header>
+
 
     <main class="library-main">
         <section class="form-section">
             <div class="container">
                 <h2>Add New Book</h2>
-                <form class="library-form" id="addBookForm" action="#" method="POST">
-                    <div class="form-group">
-                        <label for="bookId">Book ID:</label>
-                        <input type="text" id="bookId" name="bookId" required 
-                               placeholder="Enter unique book ID">
-                    </div>
-                    
+                <form class="library-form" id="addBookForm">
                     <div class="form-row">
                         <div class="form-group half-width">
                             <label for="bookName">Title:</label>
@@ -55,17 +50,6 @@
                         <div class="form-group half-width">
                             <label for="category">Category:</label>
                             <select id="category" name="category" required>
-                                <option value="">Select category</option>
-                                <option value="fiction">Fiction</option>
-                                <option value="non-fiction">Non-Fiction</option>
-                                <option value="science">Science</option>
-                                <option value="history">History</option>
-                                <option value="fantasy">fantasy</option>
-                                <option value="Children'books">Children'books</option>
-                                <option value="self-help">self-help</option>
-                                <option value="philosophy">philosophy</option>
-                                <option value="technology">Technology</option>
-                                <option value="academic">academic</option>
                             </select>
                         </div>
                         
@@ -73,6 +57,11 @@
                             <label for="publishedDate">Published Date:</label>
                             <input type="date" id="publishedDate" name="publishedDate" required>
                         </div>
+                    </div>
+
+                    <div class="form-group half-width">
+                            <label for="numberOfCopies">Number of Copies:</label>
+                            <input type="number" id="numberOfCopies" name="numberOfCopies" required min='1' placeholder="1">
                     </div>
                     
                     <div class="form-group">
@@ -95,10 +84,10 @@
         </section>
     </main>
   
-<script type="module" src="../user-adminpages/bookManager.mjs"></script>
+<!-- <script src="../static/js/bookManager.js"></script> -->
 
-
-<script src="addAdmin.js"></script>
+<script  src="../static/js/api.js" ></script>
+  <script  src="../static/js/addAdmin.js" ></script>
 
 </body>
 </html>

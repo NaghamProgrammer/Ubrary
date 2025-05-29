@@ -1,0 +1,261 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background: url("background6.jpg") no-repeat;
+  background-position: center;
+  background-size: cover;
+  padding-top: 80px; /* Added for navbar spacing */
+}
+
+/* Navbar styles - Left-aligned version */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    padding: 15px 5%;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    gap: 40px; /* Space between logo and menu */
+  }
+  
+  .navbar h2 {
+    color: #822602;
+    font-size: 2rem;
+    font-family: "Times New Roman", Times, serif;
+    margin: 0;
+    white-space: nowrap; /* Prevents text wrapping */
+  }
+  
+  .navmenu {
+    display: flex;
+    width: 100%; /* Takes remaining space */
+  }
+  
+  .navmenu ul {
+    display: flex;
+    gap: 25px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+  }
+  
+  .navmenu ul li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    padding: 5px 0;
+    position: relative;
+    white-space: nowrap;
+  }
+  
+  .navmenu ul li a:hover {
+    color: #834d40;
+  }
+  
+  .navmenu ul li a.active {
+    color: #822602;
+    border-bottom: 2px solid #822602;
+  }
+/* Form styles */
+.Form-Box_ {
+  position: relative;
+  width: 400px;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+}
+
+.Form-Box_.Login-Form_ {
+  height: auto; /* Changed to auto for flexibility */
+  min-height: 450px;
+}
+
+.Form-Box_.Register-Form_ {
+  height: auto; /* Changed to auto for flexibility */
+  min-height: 550px;
+}
+
+h2 {
+  font-size: 2em;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.Inputbox_ {
+  position: relative;
+  margin: 25px 0;
+  width: 100%;
+  border-bottom: 2px solid #fff;
+}
+
+.Inputbox_ label {
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  transform: translateY(-50%);
+  color: #fff;
+  font-size: 1em;
+  pointer-events: none;
+  transition: 0.1s;
+}
+
+input:focus ~ label,
+input:valid ~ label {
+  top: -5px;
+}
+
+.Inputbox_ input {
+  width: 100%;
+  height: 50px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1em;
+  padding: 0 35px 0 5px;
+  color: #fff;
+}
+
+.Inputbox_ ion-icon {
+  position: absolute;
+  right: 8px;
+  color: #fff;
+  font-size: 1.2em;
+  top: 20px;
+}
+
+/* Login page specific */
+.Forget_ {
+  margin: -5px 0 20px;
+  font-size: 0.9em;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.Forget_ label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.Forget_ label a {
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.Forget_ label a:hover {
+  text-decoration: underline;
+}
+
+/* Registration page specific */
+.Terms_ {
+  margin: -5px 0 20px;
+  font-size: 0.9em;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.Terms_ label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.Terms_ label a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 5px;
+  transition: all 0.3s ease;
+}
+
+.Terms_ label a:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  height: 45px;
+  border-radius: 40px;
+  background: #0e2f4e;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  color: #fff;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+}
+
+button:hover {
+  background: #0a2038;
+  transform: translateY(-2px);
+}
+
+/* Links */
+.Register_,
+.Login_ {
+  font-size: 0.9em;
+  color: #fff;
+  text-align: center;
+  margin: 25px 0 10px;
+}
+
+.Register_ p a,
+.Login_ p a {
+  text-decoration: none;
+  color: #d4a59e;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.Register_ p a:hover,
+.Login_ p a:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
+/* Validation error styles */
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.8em;
+  margin-top: -15px;
+  margin-bottom: 15px;
+  display: none;
+}
+
+.input-error {
+  border-bottom: 2px solid #ff6b6b !important;
+}

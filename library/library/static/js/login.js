@@ -69,7 +69,7 @@ document
       if (userDataToStore.role === "admin") {
         window.location.href = "../user-adminpages/adminPage.html";
       } else {
-        window.location.href = "../user-adminpages/userPage.html";
+        window.location.href = "../templates/userPage.html";
       }
     } catch (error) {
       // Handle login errors

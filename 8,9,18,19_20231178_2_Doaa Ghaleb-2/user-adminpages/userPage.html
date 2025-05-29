@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubrary - Book Library</title>
+    <link rel="stylesheet" href="userPage.css">
+</head>
+<body>
+    <header>
+       <nav class="navbar">
+        <div class="logo">
+            <h2>Ubrary</h2>
+        </div>
+        <div class="navmenu">
+            <ul>
+                <li class="active"><a href="userPage.html">Home</a></li>
+                    <li><a href="borrowed.html">Borrowed</a></li>
+                    <li><a href="favourites.html">Favourites</a></li>
+            </ul>
+        </div>
+           <a href="../landingpage/index.html" class="auth-button">Log out</a>
+    </nav>
+    </header>
+
+
+
+    <div class="search-hero">
+        <div class="search-container">
+            <img src="magnifier.png" alt="Search" class="magnifier-icon">
+            <input type="text" id="search" placeholder="Search book by Title/Author/Category">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Available Books:</h2>
+        <div class="books-grid" id="booksGrid">
+            <!-- Books will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script src="bookManager.mjs" type="module"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const books = window.bookManager.getBooks();
+            const booksGrid = document.getElementById('booksGrid');
+
+            // Clear existing content
+            booksGrid.innerHTML = '';
+
+            // Display books
+            for (const bookId in books) {
+                const book = books[bookId];
+                if (book) {
+                    const bookElement = `
+                        <a href="bookInfo.html?id=${book.id}" class="book-link">
+                            <div class="book">
+                                <img src="${book.cover}" alt="${book.title}">
+                                <div class="book-info">
+                                    <div class="title-author">
+                                        <span class="title">${book.title}</span>
+                                        <span class="author">${book.author}</span>
+                                    </div>
+                                    <span class="status ${book.borrowed ? 'borrowed' : 'available'}">
+                                        ${book.borrowed ? 'Borrowed' : 'Available'}
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                    booksGrid.insertAdjacentHTML('beforeend', bookElement);
+                }
+            };
+
+            // Search functionality
+            const searchInput = document.getElementById('search');
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && this.value.trim() !== '') {
+                    const query = this.value.trim().toLowerCase();
+                    const filteredBooks = Object.values(books).filter(book => 
+                        book.title.toLowerCase().includes(query) ||
+                        book.author.toLowerCase().includes(query) ||
+                        book.category.toLowerCase().includes(query)
+                    );
+
+                    if (filteredBooks.length > 0) {
+                        booksGrid.innerHTML = '';
+                        filteredBooks.forEach(book => {
+                            const bookElement = `
+                                <a href="bookInfo.html?id=${book.id}" class="book-link">
+                                    <div class="book">
+                                        <img src="${book.cover}" alt="${book.title}">
+                                        <div class="book-info">
+                                            <div class="title-author">
+                                                <span class="title">${book.title}</span>
+                                                <span class="author">${book.author}</span>
+                                            </div>
+                                            <span class="status ${book.borrowed ? 'borrowed' : 'available'}">
+                                                ${book.borrowed ? 'Borrowed' : 'Available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            `;
+                            booksGrid.insertAdjacentHTML('beforeend', bookElement);
+                        });
+                    } else {
+                        alert('No books found matching your search');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

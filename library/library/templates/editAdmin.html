@@ -32,7 +32,7 @@
                     <li class="active"><a href="editAdmin.html">Edit</a></li>
                 </ul>
             </div>
-            <a href="../landingpage/index.html" class="auth-button">Log out</a>
+            <a href="index.html" class="auth-button">Log out</a>
         </nav>
     </header>
 
@@ -40,6 +40,7 @@
         <section class="form-section">
             <div class="container">
                 <h2>Edit Book</h2>
+                <div id="message" class="message"></div>
                 <form class="library-form" id="editBookForm">
                     <!-- Search by Book ID -->
                     <div class="form-group search-box">
@@ -71,17 +72,6 @@
                             <div class="form-group half-width">
                                 <label for="category">Category:</label>
                                 <select id="category" name="category" required>
-                                    <option value="">Select category</option>
-                                    <option value="fiction">Fiction</option>
-                                    <option value="non-fiction">Non-Fiction</option>
-                                    <option value="science">Science</option>
-                                    <option value="history">History</option>
-                                    <option value="fantasy">Fantasy</option>
-                                    <option value="children's books">Children's Books</option>
-                                    <option value="self-help">Self-Help</option>
-                                    <option value="philosophy">Philosophy</option>
-                                    <option value="technology">Technology</option>
-                                    <option value="academic">Academic</option>
                                 </select>
                             </div>
                             
@@ -89,6 +79,12 @@
                                 <label for="publishedDate">Published Date:</label>
                                 <input type="date" id="publishedDate" name="publishedDate">
                             </div>
+                        </div>
+
+                       
+                        <div class="form-group half-width">
+                            <label for="numberOfCopies">Number of Copies:</label>
+                            <input type="number" id="numberOfCopies" name="numberOfCopies" required min="1" placeholder="Available copies">
                         </div>
                         
                         <div class="form-group">
@@ -106,6 +102,8 @@
         </section>
     </main>
 
-    <script src="editAdmin.js"></script>
+    <script src="../static/js/api.js"></script>
+   <script src="../static/js/editAdmin.js"></script>
+
 </body>
 </html>

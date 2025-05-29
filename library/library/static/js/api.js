@@ -3,6 +3,12 @@
 // Base API URL - adjust if your API is hosted elsewhere
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
+// Helper to get CSRF token from cookies
+function getCookie(name) {
+  const cookieValue = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return cookieValue ? cookieValue.pop() : '';
+}
+
 // API Service object with authentication methods
 const ApiService = {
   /**
@@ -185,8 +191,264 @@ const ApiService = {
       console.error('Logout error:', error);
       throw error;
     }
-  }
+  },
+
+  /**
+   * Get borrowed books
+   * @returns {Promise} - Promise resolving to the borrowed books list
+   */
+  async getBorrowedBooks() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/borrowed-books/`, {
+        method: 'GET',
+        credentials: 'include', 
+        headers: {
+          'Content-Type': 'application/json'
+          // No Authorization header needed
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Failed to fetch borrowed books: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching borrowed books:', error);
+      throw error;
+    }
+  },
+
+  async returnBorrowedBook(bookId) {
+    const csrfToken = getCookie('csrftoken');
+    
+    if (!csrfToken) {
+        throw new Error('CSRF token not found. Please refresh the page or login again.');
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/borrowed-books/`, {
+            method: 'PATCH',
+            credentials: 'include',  // Important for session cookies
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ book_id: bookId }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error || `Failed to return book: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error returning book:', error);
+        throw error;
+    }
+},
+
+  /**
+   * Get favorite books
+   * @returns {Promise} - Promise resolving to the favorite books list
+   */
+  async getFavoriteBooks() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/favorite-books/`, {
+        method: 'GET',
+        credentials: 'include', 
+        headers: {
+          'Content-Type': 'application/json'
+          // No Authorization header
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Failed to fetch favorite books: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching favorite books:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Remove a book from favorites
+   * @param {string} bookId - ID of the book to remove
+   * @returns {Promise} - Promise resolving to the removal response
+   */
+async removeFavoriteBook(bookId) {
+    try {
+        const csrfToken = getCookie('csrftoken');
+        const response = await fetch(`${API_BASE_URL}/favorite-books/${bookId}/`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error || `Failed to remove favorite: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error removing favorite book:', error);
+        throw error;
+    }
+}, async getBooks() {
+    const response = await fetch(`${API_BASE_URL}/admin/books/`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error(`Failed to get books: ${response.status}`);
+    return await response.json();
+  },
+
+  async getBookById(id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/books/${id}/`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            // Try to parse error JSON, otherwise use status text
+            let errorDetail = `Book not found or error: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData.detail || errorData.error || errorDetail;
+            } catch (e) { /* Ignore JSON parse error */ }
+            throw new Error(errorDetail);
+        }
+        const book = await response.json();
+        // Ensure categories is an array if it exists
+        if (book.categories && !Array.isArray(book.categories)) {
+            book.categories = [book.categories]; 
+        }
+        return book;
+    } catch (error) {
+        console.error('Get book error:', error);
+        throw error;
+    }
+  },
+
+  async addBook(formData) {
+    const csrfToken = getCookie('csrftoken');
+    const response = await fetch(`${API_BASE_URL}/admin/books/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'X-CSRFToken': csrfToken
+        // Content-Type is set automatically for FormData
+      },
+      body: formData
+    });
+    if (!response.ok) {
+        let errorDetail = `Failed to add book: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorDetail = errorData.detail || JSON.stringify(errorData) || errorDetail;
+        } catch (e) { /* Ignore JSON parse error */ }
+        throw new Error(errorDetail);
+    }
+    return await response.json();
+  },
+
+  /**
+   * Update book details
+   * @param {string} id - Book ID
+   * @param {object} data - Updated book data
+   * @returns {Promise} - Promise resolving to updated book
+   */
+  async updateBook(id, data) {
+    try {
+        const csrfToken = getCookie('csrftoken');
+        const response = await fetch(`${API_BASE_URL}/admin/books/${id}/`, {
+            method: 'PUT', // Or PATCH if your backend supports partial updates
+            credentials: 'include', // <<< Added this line
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            let errorDetail = `Failed to update book: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                console.error("API Error Response:", errorData); 
+                // Use specific error fields if available
+                errorDetail = errorData.detail || errorData.error || JSON.stringify(errorData) || errorDetail;
+            } catch (e) { /* Ignore JSON parse error */ }
+            throw new Error(errorDetail);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Update book error:', error);
+        throw error; // Re-throw the error for the calling function to handle
+    }
+  },
+
+  async deleteBook(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/books/${id}/`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        }
+      });
+      if (!response.ok && response.status !== 204) { // Allow 204 No Content
+        let errorDetail = `Failed to delete book: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorDetail = errorData.detail || errorData.error || errorDetail;
+        } catch (e) { /* Ignore JSON parse error */ }
+        throw new Error(errorDetail);
+      }
+      // For DELETE, returning the response status might be enough
+      return response; 
+    } catch (error) {
+      console.error('Delete book error:', error);
+      throw error;
+    }
+  },
+
+  async getCategories() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to load categories: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Get categories error:', error);
+      throw error;
+    }
+  },
 };
+
+
 
 // Export the API Service
 window.ApiService = ApiService;
