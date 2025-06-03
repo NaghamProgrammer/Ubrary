@@ -7,6 +7,8 @@ from .views import (
     favorite_books_page, PasswordResetRequestView, PasswordResetConfirmView, 
 )
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 
 router = DefaultRouter()
 router.register('books', BookViewSet)
@@ -40,4 +42,4 @@ urlpatterns = [
     path('borrowed-books/', borrowed_books_page, name='page-borrowed-books'),
     path('favorite-books/', favorite_books_page, name='page-favorite-books'),
 
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
