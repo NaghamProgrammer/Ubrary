@@ -35,13 +35,25 @@ const ApiService = {
       });
 
       if (!response.ok) {
+        let errorMessage = `Registration failed: ${response.status} ${response.statusText}`; // Default error
         try {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Registration failed');
+          // Try common error fields or stringify the data
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else {
+             // If it's an object but no known error field, stringify it
+             errorMessage = JSON.stringify(errorData);
+          }
         } catch (jsonError) {
-          // If parsing JSON fails, use the status text instead
-          throw new Error(`Registration failed: ${response.status} ${response.statusText}`);
+          // If JSON parsing fails, the default statusText message is already set
+          console.error("Failed to parse error JSON response:", jsonError);
         }
+        throw new Error(errorMessage); // Throw the extracted or default message
       }
 
       return await response.json();

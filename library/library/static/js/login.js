@@ -67,7 +67,7 @@ document
 
       // Redirect based on role
       if (userDataToStore.role === "admin") {
-        window.location.href = "../user-adminpages/adminPage.html";
+        window.location.href = "../templates/adminPage.html";
       } else {
         window.location.href = "../templates/userPage.html";
       }

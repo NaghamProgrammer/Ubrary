@@ -19,6 +19,7 @@ from .permissions import IsCustomAdmin
 
 import uuid
 import datetime
+import re
 
 
 User = get_user_model()
@@ -38,6 +39,19 @@ class SignupView(APIView):
 
             if not email or not password:
                 return Response({'error': 'Email and password are required'}, status=400)
+
+            # --- START Password Validation ---
+            if not (8 <= len(password) <= 12):
+                return Response({'error': 'Password must be between 8 and 12 characters long.'}, status=400)
+            if not re.search(r'[A-Z]', password):
+                return Response({'error': 'Password must contain at least one uppercase letter.'}, status=400)
+            if not re.search(r'[a-z]', password):
+                return Response({'error': 'Password must contain at least one lowercase letter.'}, status=400)
+            if not re.search(r'[0-9]', password):
+                return Response({'error': 'Password must contain at least one number.'}, status=400)
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+                return Response({'error': 'Password must contain at least one special character.'}, status=400)
+            # --- END Password Validation ---
 
             # Check if user already exists
             if User.objects.filter(email=email).exists():
@@ -64,7 +78,7 @@ class LoginView(APIView):
 
         if user is not None:
             login(request, user)
-            return Response({'message': 'Login successful.'})
+            return Response({'message': 'Login successful.', 'is_admin': user.is_admin})
         else:
             return Response({'error': 'Invalid email or password.'}, status=401)
 
