@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../static/css/userPage.css">
 </head>
 <body>
+    
     <header>
        <nav class="navbar">
         <div class="logo">
@@ -23,8 +24,6 @@
     </nav>
     </header>
 
-
-
     <div class="search-hero">
         <div class="search-container">
             <img src="magnifier.png" alt="Search" class="magnifier-icon">
@@ -39,74 +38,14 @@
         </div>
     </div>
 
-    <script src="bookManager.mjs" type="module"></script>
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/bookManager.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const books = window.bookManager.getBooks();
-            const booksGrid = document.getElementById('booksGrid');
-
-            // Clear existing content
-            booksGrid.innerHTML = '';
-
-            // Display books
-            for (const bookId in books) {
-                const book = books[bookId];
-                if (book) {
-                    const bookElement = `
-                        <a href="bookInfo.html?id=${book.id}" class="book-link">
-                            <div class="book">
-                                <img src="${book.cover}" alt="${book.title}">
-                                <div class="book-info">
-                                    <div class="title-author">
-                                        <span class="title">${book.title}</span>
-                                        <span class="author">${book.author}</span>
-                                    </div>
-                                    <span class="status ${book.borrowed ? 'borrowed' : 'available'}">
-                                        ${book.borrowed ? 'Borrowed' : 'Available'}
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    `;
-                    booksGrid.insertAdjacentHTML('beforeend', bookElement);
-                }
-            };
-
-            // Search functionality
             const searchInput = document.getElementById('search');
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' && this.value.trim() !== '') {
-                    const query = this.value.trim().toLowerCase();
-                    const filteredBooks = Object.values(books).filter(book => 
-                        book.title.toLowerCase().includes(query) ||
-                        book.author.toLowerCase().includes(query) ||
-                        book.category.toLowerCase().includes(query)
-                    );
-
-                    if (filteredBooks.length > 0) {
-                        booksGrid.innerHTML = '';
-                        filteredBooks.forEach(book => {
-                            const bookElement = `
-                                <a href="bookInfo.html?id=${book.id}" class="book-link">
-                                    <div class="book">
-                                        <img src="${book.cover}" alt="${book.title}">
-                                        <div class="book-info">
-                                            <div class="title-author">
-                                                <span class="title">${book.title}</span>
-                                                <span class="author">${book.author}</span>
-                                            </div>
-                                            <span class="status ${book.borrowed ? 'borrowed' : 'available'}">
-                                                ${book.borrowed ? 'Borrowed' : 'Available'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </a>
-                            `;
-                            booksGrid.insertAdjacentHTML('beforeend', bookElement);
-                        });
-                    } else {
-                        alert('No books found matching your search');
-                    }
+                    window.location.href = `searchResults.html?q=${encodeURIComponent(this.value.trim())}`;
                 }
             });
         });

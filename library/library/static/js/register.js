@@ -38,8 +38,8 @@ document
       return;
     }
 
-    if (password.length <= 6) {
-      alert("Password must be longer than 6 characters");
+    if (password.length < 8) {
+      alert("Password must be longer than 7 characters");
       return;
     }
 
@@ -72,14 +72,11 @@ document
       const response = await ApiService.register(userData);
 
       alert(`Welcome ${username}! You can now log in with your credentials`);
-      window.location.href = "..\..\templates\login.html";
+      window.location.href = "../templates/login.html";
     } catch (error) {
-      // Handle specific errors
-      if (error.message.includes("email")) {
-        alert("This email is already registered");
-      } else {
-        alert(`Registration failed: ${error.message}`);
-      }
+      // The ApiService wraps the backend error message in error.message
+      let detailedErrorMessage = error.message || "An unexpected error occurred during registration.";
+      alert(`Registration failed: ${detailedErrorMessage}`); // Display the detailed message from ApiService
     } finally {
       // Reset button state
       const submitButton = document.querySelector('button[type="submit"]');

@@ -15,7 +15,7 @@ const ApiService = {
    * Register a new user
    * @param {Object} userData - User registration data (username, email, password)
    * @returns {Promise} - Promise resolving to the registration response
-   */
+  */
   async register(userData) {
     try {
       // Map frontend data to backend expected format
@@ -35,13 +35,25 @@ const ApiService = {
       });
 
       if (!response.ok) {
+        let errorMessage = `Registration failed: ${response.status} ${response.statusText}`; // Default error
         try {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Registration failed');
+          // Try common error fields or stringify the data
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (errorData.detail) {
+            errorMessage = errorData.detail;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else {
+             // If it's an object but no known error field, stringify it
+             errorMessage = JSON.stringify(errorData);
+          }
         } catch (jsonError) {
-          // If parsing JSON fails, use the status text instead
-          throw new Error(`Registration failed: ${response.status} ${response.statusText}`);
+          // If JSON parsing fails, the default statusText message is already set
+          console.error("Failed to parse error JSON response:", jsonError);
         }
+        throw new Error(errorMessage); // Throw the extracted or default message
       }
 
       return await response.json();
@@ -52,34 +64,71 @@ const ApiService = {
   },
 
   /**
-   * Login a user
+ * Logs in a user with the provided email and password.
+ * 
+ * @param {string} email - The user's email address.
+ * @param {string} password - The user's password.
+ * @returns {Promise<Object>} A promise resolving to the login response (includes token).
+ * @throws {Error} If login fails due to invalid credentials or server error.
+ */
+async login(email, password) {
+  try {
+    const csrfToken = getCookie("csrftoken"); // Get CSRF token
+
+    const response = await fetch(`${API_BASE_URL}/login/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken, // Include CSRF token in headers
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Login failed");
+      } catch (jsonError) {
+        // Fallback error if response JSON parsing fails
+        throw new Error(`Login failed: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error; // Re-throw for error handling upstream
+  }
+},
+
+  /**
+   * Check if email exists in the database
    * @param {string} email - User email
-   * @param {string} password - User password
-   * @returns {Promise} - Promise resolving to the login response with token
+   * @returns {Promise} - Promise resolving to the email check response
    */
-  async login(email, password) {
+  async checkEmailExists(email) {
     try {
-      const response = await fetch(`${API_BASE_URL}/login/`, {
+      const response = await fetch(`${API_BASE_URL}/email-exists/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
 
       if (!response.ok) {
         try {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Login failed');
+          throw new Error(errorData.error || 'Email check failed');
         } catch (jsonError) {
           // If parsing JSON fails, use the status text instead
-          throw new Error(`Login failed: ${response.status} ${response.statusText}`);
+          throw new Error(`Email check failed: ${response.status} ${response.statusText}`);
         }
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Email check error:', error);
       throw error;
     }
   },
@@ -193,6 +242,51 @@ const ApiService = {
     }
   },
 
+
+    /**
+   * Borrow a book
+   * @param {string} bookId - ID of the book to borrow
+   * @returns {Promise} - Promise resolving to the borrow response
+   */
+  async borrowBook(bookId) {
+    try {
+      const csrfToken = getCookie('csrftoken');
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found. Please refresh the page.');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/borrowed-books/`, {
+        method: 'POST',
+        credentials: 'include', // Important for session cookies
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ book: bookId })
+      });
+
+      if (!response.ok) {
+        // Try to get detailed error message from response
+        let errorDetail = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.detail || 
+                       errorData.error || 
+                       JSON.stringify(errorData);
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(`Borrow failed: ${errorDetail}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Borrow book error:', error);
+      throw error; // Re-throw for handling in the UI
+    }
+  },
+
   /**
    * Get borrowed books
    * @returns {Promise} - Promise resolving to the borrowed books list
@@ -250,6 +344,72 @@ const ApiService = {
     }
 },
 
+
+  /**
+   * Add a book to favorites
+   * @param {string} bookId - ID of the book to favorite
+   * @returns {Promise} - Promise resolving to the favorite response
+   */
+  async addFavoriteBook(bookId) {
+    try {
+      const csrfToken = getCookie('csrftoken');
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found. Please refresh the page.');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/favorite-books/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ book: bookId })
+      });
+
+      if (!response.ok) {
+        let errorDetail = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.detail || 
+                       errorData.error || 
+                       JSON.stringify(errorData);
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(`Add to favorites failed: ${errorDetail}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Add favorite error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Check if a book is favorited
+   * @param {string} bookId - ID of the book to check
+   * @returns {Promise<boolean>} - Promise resolving to whether the book is favorited
+   */
+  async checkIfFavorited(bookId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/favorite-books/`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) return false;
+      
+      const favoriteBooks = await response.json();
+      return favoriteBooks.some(fav => fav.book_id == bookId);
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+      return false;
+    }
+  },
+
   /**
    * Get favorite books
    * @returns {Promise} - Promise resolving to the favorite books list
@@ -282,7 +442,7 @@ const ApiService = {
    * @param {string} bookId - ID of the book to remove
    * @returns {Promise} - Promise resolving to the removal response
    */
-async removeFavoriteBook(bookId) {
+  async removeFavoriteBook(bookId) {
     try {
         const csrfToken = getCookie('csrftoken');
         const response = await fetch(`${API_BASE_URL}/favorite-books/${bookId}/`, {
@@ -294,18 +454,28 @@ async removeFavoriteBook(bookId) {
             }
         });
 
-        if (!response.ok) {
+        if (!response.ok && response.status !== 204) {
+            // Still try to get error JSON
             const errorData = await response.json().catch(() => null);
             throw new Error(errorData?.error || `Failed to remove favorite: ${response.status}`);
         }
 
+        // ✅ If 204 (No Content), treat it as success without parsing
+        if (response.status === 204) {
+            return { success: true };
+        }
+
+        // ✅ If any body is returned (200 OK), parse it
         return await response.json();
     } catch (error) {
         console.error('Error removing favorite book:', error);
         throw error;
     }
-}, async getBooks() {
-    const response = await fetch(`${API_BASE_URL}/admin/books/`, {
+  },
+
+ async getBooks() {
+    // Fetch only available books for the user page
+    const response = await fetch(`${API_BASE_URL}/books/available/`, {
       method: 'GET',
       credentials: 'include',
     });
@@ -315,7 +485,8 @@ async removeFavoriteBook(bookId) {
 
   async getBookById(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/admin/books/${id}/`, {
+        // Fetch a single book from the standard books endpoint
+        const response = await fetch(`${API_BASE_URL}/books/${id}/`, {
             method: 'GET',
             credentials: 'include',
             headers: {
@@ -336,6 +507,10 @@ async removeFavoriteBook(bookId) {
         if (book.categories && !Array.isArray(book.categories)) {
             book.categories = [book.categories]; 
         }
+        // Ensure cover image is formatted for display
+        if (book.cover && !book.cover.startsWith('data:image')) {
+             book.cover = `data:image/jpeg;base64,${book.cover}`;
+         }
         return book;
     } catch (error) {
         console.error('Get book error:', error);
@@ -446,9 +621,91 @@ async removeFavoriteBook(bookId) {
       throw error;
     }
   },
+
+  async searchBooks(query) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/search/?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`);
+      }
+      
+      const results = await response.json();
+      return {
+        count: results.length,
+        results: results.map(book => ({
+          ...book,
+          cover: book.cover ? `data:image/jpeg;base64,${book.cover}` : null,
+          borrowed: !book.is_available
+        }))
+      };
+    } catch (error) {
+      console.error('Search error:', error);
+      throw error;
+    }
+  }
 };
 
 
+// Add this new function to check if a book is borrowed
+async function checkIfBorrowed(bookId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/borrowed-books/`, {
+            method: 'GET',
+            credentials: 'include' // Send session cookies
+        });
+        
+        if (!response.ok) return false;
+        
+        const borrowedBooks = await response.json();
+        // Check if this book is borrowed and not returned
+        return borrowedBooks.some(b => b.book_id == bookId && !b.returned);
+    } catch (error) {
+        console.error('Error checking borrow status:', error);
+        return false;
+    }
+}
 
-// Export the API Service
+
+/**
+ * Get the currently logged-in user from the backend
+ * @returns {Promise} - Resolves to the user object (includes is_admin, email, etc.)
+ */
+async function getCurrentUser() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/me/`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error || `Failed to get current user: ${response.status}`);
+        }
+
+        return await response.json(); // should include is_admin, email, etc.
+    } catch (error) {
+        console.error('Error fetching current user:', error);
+        throw error;
+    }
+}
+
+
+
+
+// Add the function to ApiService (right before the last line)
+ApiService.checkIfBorrowed = checkIfBorrowed;
+
+ApiService.getCurrentUser = getCurrentUser;
+
+// Make ApiService available globally
 window.ApiService = ApiService;

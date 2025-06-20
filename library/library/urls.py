@@ -4,9 +4,11 @@ from .views import (
     SignupView, LoginView, BookViewSet, BorrowedBookView, FavoriteBookView, FavoriteBookDeleteView,
     UserListCreateView, UserDetailView, AdminUserViewSet,
     AdminBookViewSet, CategoryViewSet, borrowed_books_page, 
-    favorite_books_page, PasswordResetRequestView, PasswordResetConfirmView, 
+    favorite_books_page, PasswordResetRequestView, PasswordResetConfirmView,
+    user_page, admin_page, search_results_page, index, SearchView, EmailExistsView
 )
 from django.contrib import admin
+from .views import CurrentUserView
 
 router = DefaultRouter()
 router.register('books', BookViewSet)
@@ -22,7 +24,11 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/auth/', include('rest_framework.urls')),
     
-    # Password reset endpoints (from urlsA.py)
+    # Search endpoint
+    path('api/search/', SearchView.as_view(), name='search'),
+    
+     # Password reset endpoints (from urlsA.py)
+    path('api/email-exists/', EmailExistsView.as_view(), name='email-exists'),
     path('api/password-reset-request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('api/password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
 
@@ -39,5 +45,11 @@ urlpatterns = [
     # Page views
     path('borrowed-books/', borrowed_books_page, name='page-borrowed-books'),
     path('favorite-books/', favorite_books_page, name='page-favorite-books'),
+    
+    # New page views
+    path('user/', user_page, name='user-page'),
+    path('admin/', admin_page, name='admin-page'),
+    path('search/', search_results_page, name='search-results'),
 
+    path('api/user/me/', CurrentUserView.as_view(), name='current-user'),
 ]

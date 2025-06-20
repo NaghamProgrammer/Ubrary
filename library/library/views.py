@@ -4,10 +4,12 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+
 from rest_framework import viewsets, generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework.decorators import action
 
 from .models import Book, BorrowedBook, FavoriteBook, Category
 from .serializers import (
@@ -19,6 +21,8 @@ from .permissions import IsCustomAdmin
 
 import uuid
 import datetime
+import re
+from django.db import models
 
 
 User = get_user_model()
@@ -38,6 +42,19 @@ class SignupView(APIView):
 
             if not email or not password:
                 return Response({'error': 'Email and password are required'}, status=400)
+
+            # --- START Password Validation ---
+            if not (8 <= len(password) <= 12):
+                return Response({'error': 'Password must be between 8 and 12 characters long.'}, status=400)
+            if not re.search(r'[A-Z]', password):
+                return Response({'error': 'Password must contain at least one uppercase letter.'}, status=400)
+            if not re.search(r'[a-z]', password):
+                return Response({'error': 'Password must contain at least one lowercase letter.'}, status=400)
+            if not re.search(r'[0-9]', password):
+                return Response({'error': 'Password must contain at least one number.'}, status=400)
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+                return Response({'error': 'Password must contain at least one special character.'}, status=400)
+            # --- END Password Validation ---
 
             # Check if user already exists
             if User.objects.filter(email=email).exists():
@@ -64,9 +81,30 @@ class LoginView(APIView):
 
         if user is not None:
             login(request, user)
-            return Response({'message': 'Login successful.'})
+            return Response({
+                'message': 'Login successful.',
+                'is_admin': user.is_admin,
+                'email': user.email
+            })
         else:
             return Response({'error': 'Invalid email or password.'}, status=401)
+
+class EmailExistsView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        
+        if not email:
+            return Response({'error': 'Email is required'}, status=400)
+            
+        try:
+            user = User.objects.get(email=email)
+            return Response({'exists': True, 'message': 'Email found'})
+        except User.DoesNotExist:
+            return Response({'exists': False, 'error': 'This email does not exist in our system'}, status=404)
+        except Exception as e:
+            return Response({'error': f'Failed to check email: {str(e)}'}, status=500)
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
@@ -110,6 +148,19 @@ class PasswordResetConfirmView(APIView):
         
         if not token or not uid or not new_password:
             return Response({'error': 'Token, user ID, and new password are required'}, status=400)
+
+        # --- START Password Validation ---
+        if not (8 <= len(new_password) <= 12):
+            return Response({'error': 'Password must be between 8 and 12 characters long.'}, status=400)
+        if not re.search(r'[A-Z]', new_password):
+            return Response({'error': 'Password must contain at least one uppercase letter.'}, status=400)
+        if not re.search(r'[a-z]', new_password):
+            return Response({'error': 'Password must contain at least one lowercase letter.'}, status=400)
+        if not re.search(r'[0-9]', new_password):
+            return Response({'error': 'Password must contain at least one number.'}, status=400)
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+            return Response({'error': 'Password must contain at least one special character.'}, status=400)
+        # --- END Password Validation ---
             
         # Check if token exists and is valid
         if token not in password_reset_tokens:
@@ -144,7 +195,17 @@ class PasswordResetConfirmView(APIView):
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
+    #permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='available')
+    def available_books(self, request):
+        available_books = Book.objects.all()
+        available_books = [book for book in available_books if book.is_available()]
+        serializer = self.get_serializer(available_books, many=True)
+        return Response(serializer.data)
+
+        
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -163,36 +224,55 @@ class BorrowedBookView(APIView):
         user = request.user
         book_id = request.data.get('book')
 
-        # Check if the user has already borrowed this book before
+        if not book_id:
+            return Response({'error': 'Book ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check user's borrow limit
+        if BorrowedBook.objects.filter(user=user, returned=False).count() >= 6:
+            return Response({'error': 'Borrow limit reached. Return some books first.'}, status=400)
+
         try:
-            borrowed_book = BorrowedBook.objects.get(user=user, book_id=book_id)
+            book = Book.objects.get(id=book_id)
+        except Book.DoesNotExist:
+            return Response({'error': 'Book not found.'}, status=404)
+
+        # Check available copies
+        if book.available_copies() <= 0:
+            return Response({'error': 'No copies available for this book.'}, status=400)
+
+        try:
+            borrowed_book = BorrowedBook.objects.get(user=user, book=book)
             if borrowed_book.returned:
-                # Update the existing record
                 borrowed_book.returned = False
                 borrowed_book.return_date = None
                 borrowed_book.borrow_date = timezone.now().date()
                 borrowed_book.save()
 
+                # Decrease number_of_copies
+                book.number_of_copies -= 1
+                book.save()
+
                 serializer = BorrowedBookSerializer(borrowed_book)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.data, status=200)
             else:
-                return Response(
-                    {"error": "This book is already borrowed and not yet returned."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({'error': 'You already borrowed this book.'}, status=400)
         except BorrowedBook.DoesNotExist:
-            # Proceed with normal creation if no record exists
             serializer = BorrowedBookSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(user=user)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                # Decrease number_of_copies
+                book.number_of_copies -= 1
+                book.save()
+
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
+
     
     def patch(self, request):
         book_id = request.data.get("book_id")
-
         if not book_id:
-            return Response({"error": "book_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "book_id is required."}, status=400)
 
         try:
             borrowed_book = BorrowedBook.objects.get(user=request.user, book_id=book_id, returned=False)
@@ -200,12 +280,17 @@ class BorrowedBookView(APIView):
             borrowed_book.return_date = timezone.now().date()
             borrowed_book.save()
 
-        
+            # Increase number_of_copies
+            book = borrowed_book.book
+            book.number_of_copies += 1
+            book.save()
+
             serializer = BorrowedBookSerializer(borrowed_book)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=200)
 
         except BorrowedBook.DoesNotExist:
-            return Response({"error": "No borrowed book found to return."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "No borrowed book found to return."}, status=404)
+
 
 class FavoriteBookView(APIView):
     permission_classes = [IsAuthenticated]
@@ -284,5 +369,68 @@ def borrowed_books_page(request):
 
 def favorite_books_page(request):
     return render(request, 'favorite_books.html')
+
+
+def user_page(request):
+    """
+    View function for the user's home page.
+    Displays books and user-specific features.
+    """
+    return render(request, 'userPage.html')
+
+
+def admin_page(request):
+    """
+    View function for the admin dashboard.
+    Only accessible by admin users.
+    """
+    if not request.user.is_admin:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    return render(request, 'adminPage.html')
+
+
+def search_results_page(request):
+    """
+    View function for displaying search results.
+    """
+    return render(request, 'searchResults.html')
+
+def index(request):
+    return render(request, 'index.html')
+
+class SearchView(APIView):
+    permission_classes = [AllowAny]  # Allow unauthenticated users to search
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response({'error': 'Search query is required'}, status=400)
+
+        # Search in books (title and author)
+        books = Book.objects.filter(
+            models.Q(title__icontains=query) | 
+            models.Q(author__icontains=query)
+        )
+
+        # Search in categories
+        category_books = Book.objects.filter(
+            categories__name__icontains=query
+        )
+
+        # Combine and remove duplicates
+        all_books = (books | category_books).distinct()
+
+        # Serialize the results
+        serializer = BookSerializer(all_books, many=True)
+        return Response(serializer.data)
+    
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
 
 

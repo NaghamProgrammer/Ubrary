@@ -46,6 +46,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
 class BookSerializer(serializers.ModelSerializer):
     categories = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     available_copies = serializers.SerializerMethodField()
+    cover_url = serializers.SerializerMethodField()  
 
     class Meta:
         model = Book
@@ -53,6 +54,9 @@ class BookSerializer(serializers.ModelSerializer):
 
     def get_available_copies(self, obj):
         return obj.available_copies()
+
+    def get_cover_url(self, obj):
+        return obj.get_cover_image_data() 
 
 
 class AdminBookSerializer(serializers.ModelSerializer):
@@ -84,11 +88,16 @@ class BorrowedBookSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source='book.author', read_only=True)
     cover_url = serializers.CharField(source='book.cover_url', read_only=True)
 
+    # Add these two lines:
+    cover_url = serializers.SerializerMethodField()
+    
+    def get_cover_url(self, obj):
+        return obj.book.get_cover_image_data()
+
     class Meta:
         model = BorrowedBook
         fields = ['book', 'book_id', 'title', 'author', 'cover_url', 'borrow_date', 'return_date', 'returned']
         read_only_fields = ['book_id', 'title', 'author', 'cover_url', 'borrow_date', 'return_date', 'returned']
-
 
 
 
@@ -101,12 +110,15 @@ class FavoriteBookSerializer(serializers.ModelSerializer):
     book_id = serializers.IntegerField(source='book.id', read_only=True)
     book_title = serializers.CharField(source='book.title', read_only=True)
     book_author = serializers.CharField(source='book.author', read_only=True)
-    book_cover_url = serializers.CharField(source='book.cover_url', read_only=True)
+    book_cover_url = serializers.SerializerMethodField()
 
     class Meta:
         model = FavoriteBook
         fields = ['book', 'book_id', 'book_title', 'book_author', 'book_cover_url']
         read_only_fields = ['book_id', 'book_title', 'book_author', 'book_cover_url']
+
+    def get_book_cover_url(self, obj):
+        return obj.book.get_cover_image_data()  # or whatever method you use to get base64 cover
 
     def validate(self, data):
         user = self.context['request'].user
@@ -114,4 +126,5 @@ class FavoriteBookSerializer(serializers.ModelSerializer):
         if FavoriteBook.objects.filter(user=user, book=book).exists():
             raise serializers.ValidationError('You have already favorited this book.')
         return data
+
 

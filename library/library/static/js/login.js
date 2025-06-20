@@ -46,6 +46,7 @@ document
 
       // Call the API to authenticate the user
       const response = await ApiService.login(email, password);
+      console.log('Login response:', response); // Debug log
 
       // Store the authentication token
       if (response.token) {
@@ -58,6 +59,7 @@ document
         // Adjust based on how your backend provides role information
         role: response.is_admin ? "admin" : "user",
       };
+      console.log('User data to store:', userDataToStore); // Debug log
 
       if (rememberMe) {
         localStorage.setItem("currentUser", JSON.stringify(userDataToStore));
@@ -66,8 +68,9 @@ document
       }
 
       // Redirect based on role
+      console.log('Redirecting based on role:', userDataToStore.role); // Debug log
       if (userDataToStore.role === "admin") {
-        window.location.href = "../user-adminpages/adminPage.html";
+        window.location.href = "../templates/adminPage.html";
       } else {
         window.location.href = "../templates/userPage.html";
       }

@@ -24,33 +24,52 @@ document
       // Show loading indicator
       const submitButton = document.querySelector('button[type="submit"]');
       const originalButtonText = submitButton.textContent;
-      submitButton.textContent = "Sending...";
+      submitButton.textContent = "Checking...";
       submitButton.disabled = true;
 
-      // Call the API to request password reset
-      const response = await ApiService.requestPasswordReset(email);
+      // First, check if the email exists in the database
+      try {
+        const emailCheckResponse = await ApiService.checkEmailExists(email);
+        
+        if (!emailCheckResponse.exists) {
+          // Email doesn't exist - show alert and stop here
+          alert("This email does not exist in our system");
+          return;
+        }
+        
+        // Email exists - proceed with password reset
+        submitButton.textContent = "Sending...";
+        
+        // Call the API to request password reset
+        const response = await ApiService.requestPasswordReset(email);
 
-      // In a real application, the backend would send an email with reset instructions
-      alert(
-        `Password reset instructions have been sent to ${email}. Check your email for a reset link.`
-      );
+        // Show success message
+        alert(
+          `Password reset instructions have been sent to ${email}. Check your email for a reset link.`
+        );
 
-      // For demonstration purposes, we're redirecting to simulate the flow
-      // Now including token and uid from the response
-      window.location.href = `reset-password.html?email=${encodeURIComponent(
-        email
-      )}&token=${encodeURIComponent(response.token)}&uid=${encodeURIComponent(response.uid)}`;
-    } catch (error) {
-      // Handle specific errors
-      if (error.message.includes("email")) {
-        alert("Email address not found in our system");
-      } else {
-        alert(`Failed to send reset instructions: ${error.message}`);
+        // Redirect to set password page with token and uid from the response
+        window.location.href = `reset-password.html?email=${encodeURIComponent(
+          email
+        )}&token=${encodeURIComponent(response.token)}&uid=${encodeURIComponent(response.uid)}`;
+        
+      } catch (emailCheckError) {
+        // Handle email check errors
+        if (emailCheckError.message.includes("This email does not exist")) {
+          alert("This email does not exist in our system");
+        } else {
+          alert(`Failed to verify email: ${emailCheckError.message}`);
+        }
+        return;
       }
+
+    } catch (error) {
+      // Handle password reset request errors
+      alert(`Failed to send reset instructions: ${error.message}`);
     } finally {
       // Reset button state
       const submitButton = document.querySelector('button[type="submit"]');
-      submitButton.textContent = "Send Reset Link";
+      submitButton.textContent = originalButtonText;
       submitButton.disabled = false;
     }
   });

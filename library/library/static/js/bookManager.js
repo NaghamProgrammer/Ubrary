@@ -1,113 +1,69 @@
-import { currentBorrowedBooks, favouriteBooks } from "./bookCollection.js";
+// Remove mock data and localStorage usage
+// import { currentBorrowedBooks, favouriteBooks } from "./bookCollection.js";
 
-fetch('http://127.0.0.1:8000/api/library/')
-  .then(res => res.json())
-  .then(books => {
-    
-const defaultBooks = {
-    BK001: {
-        id: 'BK001',
-        title: 'MOBY DICK',
-        author: 'HERMAN MELVILLE',
-        category: 'Fiction',
-        cover: 'moby dick.png',
-        description: 'Moby-Dick is an 1851 novel by Herman Melville...',
-        borrowed: false,
-        favorite: false
-    },
-    BK002: {
-        id: 'BK002',
-        title: 'Pride and Prejudice',
-        author: 'JANE AUSTEN',
-        category: 'Fiction',
-        cover: 'pride and prejudice.png',
-        description: 'The romantic and witty story of Elizabeth Bennet...',
-        borrowed: false,
-        favorite: false
-    },
-    BK003: {
-        id: 'BK003',
-        title: 'To the Lighthouse',
-        author: 'VIRGINIA WOOLF',
-        category: 'Philosophy',
-        cover: 'to the lighthause.png',
-        description: 'A groundbreaking stream-of-consciousness novel...',
-        borrowed: true,
-        favorite: false
-    },
-    BK004: {
-        id: 'BK004',
-        title: '1984',
-        author: 'GEORGE ORWELL',
-        category: 'Science',
-        cover: '1984.png',
-        description: 'Orwell\'s harrowing vision of a totalitarian future...',
-        borrowed: true,
-        favorite: false
-    },
-    BK005: {
-        id: 'BK005',
-        title: 'THE TRIAL',
-        author: 'FRANZ KAFKA',
-        category: 'Philosophy',
-        cover: 'the trial.png',
-        description: 'Kafka\'s unsettling masterpiece follows Josef K....',
-        borrowed: false,
-        favorite: false
-    }
-};
-  });
-
-// Fetch all books from the backend API
+// Fetch all available books from the backend API using ApiService
 async function getBooks() {
-    const response = await fetch('http://127.0.0.1:8000/api/library/');
-    if (!response.ok) throw new Error('Failed to fetch books');
-    // Assuming the API returns an array of books, convert to object with id as key
-    const booksArray = await response.json();
-    const books = {};
-    for (const book of booksArray) {
-        books[book.id] = book;
+    const books = await ApiService.getBooks();
+    // Ensure cover images are formatted for display
+    if (Array.isArray(books)) {
+        books.forEach(book => {
+            if (book.cover && !book.cover.startsWith('data:image')) {
+                book.cover = `data:image/jpeg;base64,${book.cover}`;
+            }
+        });
     }
     return books;
 }
 
-// Update a book in the backend API
+// Update a book in the backend API (if needed elsewhere)
 async function updateBook(bookId, updates) {
-    const response = await fetch(`http://127.0.0.1:8000/api/library/${bookId}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-    });
-    if (!response.ok) throw new Error('Failed to update book');
-    return await response.json();
+    // Note: ApiService.updateBook might need adjustment for user vs admin updates
+    // Assuming it works for now, or you'll address it later.
+    return await ApiService.updateBook(bookId, updates);
 }
 
 window.bookManager = {
     getBooks,
-    updateBook
+    updateBook,
+    // Expose getBookById for bookInfo.html
+    getBookById: ApiService.getBookById
 };
 
-
-const bookListContainer = document.querySelector('.book-list');
+const bookListContainer = document.querySelector('.books-grid');
 
 async function renderBooksFromAPI() {
   try {
-    const books = await bookManager.getBooks();
-
+    const books = await window.bookManager.getBooks(); // Use window.bookManager
     if (bookListContainer) {
-      bookListContainer.innerHTML = ''; // فضي الكتب القديمة
+      bookListContainer.innerHTML = '';
+      // Convert the array of books to an object for consistent iteration
+      const booksObject = {};
+      if (Array.isArray(books)) { // Assuming API.getBooks returns array of objects
+          books.forEach(book => { booksObject[book.id] = book; });
+      } else if (books && typeof books === 'object') { // If the API happens to return an object
+          Object.assign(booksObject, books);
+      }
 
-      for (const bookId in books) {
-        const book = books[bookId];
+      for (const bookId in booksObject) {
+        const book = booksObject[bookId];
         const bookHTML = `
-          <div class="book-card">
-            <img src="${book.cover}" alt="${book.title}">
-            <h3>${book.title}</h3>
-            <p>${book.author}</p>
-            <p>${book.description}</p>
-          </div>
+            <a href="bookInfo.html?id=${book.id}" class="book-link">
+                <div class="book">
+                    <img src="${book.cover || '../static/images/placeholder.jpg'}" alt="${book.title}">
+                    <div class="book-info">
+                        <div class="title-author">
+                            <span class="title">${book.title}</span>
+                            <span class="author">${book.author}</span>
+                        </div>
+                        <!-- Always display "Available" for books from this endpoint -->
+                        <span class="status available">
+                            Available
+                        </span>
+                    </div>
+                </div>
+            </a>
         `;
-        bookListContainer.innerHTML += bookHTML;
+        bookListContainer.insertAdjacentHTML('beforeend', bookHTML);
       }
     }
   } catch (err) {
@@ -115,24 +71,38 @@ async function renderBooksFromAPI() {
   }
 }
 
+// Call renderBooksFromAPI when the page loads
+if (bookListContainer) {
+    document.addEventListener('DOMContentLoaded', renderBooksFromAPI);
+}
 
 const bookContainer = document.querySelector('.book-detail-container');
 
 if (bookContainer) {
     document.addEventListener('DOMContentLoaded', async () => {
         const bookId = getBookIdFromURL();
-        const books = await getBooks();
-        const book = books[bookId];
+        
+        try {
+            // 1. Fetch basic book info
+            const book = await ApiService.getBookById(bookId);
+            if (!book) {
+                redirectToLibrary();
+                return;
+            }
 
-        if (!book) {
-            redirectToLibrary();
-            return;
+            // 2. Check if the user borrowed this book
+            book.borrowed = await ApiService.checkIfBorrowed(bookId);
+
+            await renderBookPage(book); // ✅ Wait for DOM to be rendered
+            setupEventListeners(book.id); // ✅ Now elements are in the DOM
+
+        } catch (error) {
+            console.error('Error loading book:', error);
+            bookContainer.innerHTML = '<p>Error loading book details.</p>';
         }
-
-        renderBookPage(book);
-        setupEventListeners(bookId);
     });
 }
+
 
 function getBookIdFromURL() {
     const params = new URLSearchParams(window.location.search);
@@ -143,40 +113,84 @@ function redirectToLibrary() {
     window.location.href = 'userPage.html';
 }
 
-function renderBookPage(book) {
-    document.title = `${book.title} - Ubrary`;
+async function renderBookPage(book) {
+    try {
+        document.title = `${book.title} - Ubrary`;
 
-    // Check if the referrer is the user page
-    const isUserPage = document.referrer.includes('userPage.html');
+        // 1. Check if current user is admin (hide buttons if admin)
+        let showButtons = true;
+        let isFavorited = false;
 
-    bookContainer.innerHTML = `
-        <div class="book-cover">
-            <img src="${book.cover}" alt="${book.title}">
-            ${isUserPage ? `
-                <div class="book-actions">
-                    <button class="borrow-button" id="borrowBtn" ${book.borrowed ? 'disabled' : ''}>
-                        ${book.borrowed ? 'Borrowed' : 'Borrow'}
-                    </button>
-                    <button class="favorite-button" id="favoriteBtn">
-                        ${book.favorite ? '★ Favorited' : '☆ Add to Favorites'}
-                    </button>
+        try {
+            const user = await ApiService.getCurrentUser();
+            if (user && user.is_admin) {
+                showButtons = false; // Hide buttons for admin
+            } else if (user) {
+                // Only check favorites for non-admin users
+                try {
+                    isFavorited = await ApiService.checkIfFavorited(book.id);
+                } catch (e) {
+                    console.warn('Favorite check failed:', e);
+                }
+            }
+        } catch (e) {
+            console.warn("Couldn't fetch current user:", e);
+            // If we can't check user status, default to showing buttons
+            showButtons = true;
+        }
+
+        // 2. Render ALL book info, but conditionally show buttons
+        bookContainer.innerHTML = `
+            <div class="book-cover">
+                <img src="${book.cover || '../static/images/placeholder.jpg'}" alt="${book.title}">
+                ${showButtons ? `
+                    <div class="book-actions">
+                        <button class="borrow-button" id="borrowBtn" ${book.borrowed ? 'disabled' : ''}>
+                            ${book.borrowed ? 'Borrowed' : 'Borrow'}
+                        </button>
+                        <button class="favorite-button ${isFavorited ? 'favorited' : ''}" id="favoriteBtn">
+                            ${isFavorited ? '★ Favorited' : '☆ Add to Favorites'}
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="book-info">
+                <div class="book-meta">
+                    <span class="book-id">ID: ${book.id || 'N/A'}</span>
+                    <h1 class="book-title">${book.title || 'Untitled Book'}</h1>
+                    <span class="book-author">By ${book.author || 'Unknown Author'}</span>
+                    <span class="book-category">
+                        ${Array.isArray(book.categories) ? 
+                          book.categories.map(cat => cat.name).join(', ') : 
+                          (book.category || 'Uncategorized')}
+                    </span>
                 </div>
-            ` : ''}
-        </div>
-        <div class="book-info">
-            <div class="book-meta">
-                <span class="book-id">ID: ${book.id}</span>
-                <h1 class="book-title">${book.title}</h1>
-                <span class="book-author">By ${book.author}</span>
-                <span class="book-category">${book.category}</span>
+                <div class="book-description">
+                    <h3>Description</h3>
+                    <p>${book.description || 'No description available.'}</p>
+                </div>
             </div>
-            <div class="book-description">
-                <h3>Description</h3>
-                <p>${book.description}</p>
+        `;
+
+        // 3. Handle borrow button state if shown
+        if (showButtons && book.borrowed) {
+            const borrowBtn = document.getElementById('borrowBtn');
+            if (borrowBtn) {
+                borrowBtn.classList.add('disabled');
+            }
+        }
+
+    } catch (error) {
+        console.error('Error rendering book page:', error);
+        bookContainer.innerHTML = `
+            <div class="error-message">
+                <h2>Error Loading Book</h2>
+                <p>${error.message || 'Please try again later.'}</p>
             </div>
-        </div>
-    `;
+        `;
+    }
 }
+
 
 function setupEventListeners(bookId) {
     const borrowBtn = document.getElementById('borrowBtn');
@@ -191,50 +205,79 @@ function setupEventListeners(bookId) {
     }
 }
 
-function handleBorrow(bookId) {
-    const books = getBooks();
-    const book = books[bookId];
-    
-    // If book is already borrowed, do nothing
-    if (book.borrowed) {
-        return;
-    }
-    
-    // Check borrowing limit
-    if (currentBorrowedBooks.read().length >= 6) {
-        alert('Can not borrow more items. Please return some books to borrow again!');
-        return;
-    }
-    
-    // Proceed with borrowing
-    book.returnDate = new Date();
-    book.returnDate.setDate(book.returnDate.getDate() + 30);
-    currentBorrowedBooks.append(book);
-    book.borrowed = true;
-    updateBook(bookId, book);
-    
-    // Update button state only after successful borrow
-    const borrowBtn = document.getElementById('borrowBtn');
-    if (borrowBtn) {
+// NOTE: handleBorrow and handleFavorite still use local data structures
+// and potentially the old updateBook. These will need to be updated
+// to use the API for full backend integration.
+
+async function handleBorrow(bookId) {
+    try {
+        const borrowBtn = document.getElementById('borrowBtn');
+        
+        // Disable button during processing
+        borrowBtn.disabled = true;
+        borrowBtn.textContent = 'Processing...';
+        
+        // First check borrow limit
+        const borrowedBooks = await ApiService.getBorrowedBooks();
+        const currentBorrowedCount = borrowedBooks.filter(book => !book.returned).length;
+        
+        if (currentBorrowedCount >= 6) {
+            borrowBtn.disabled = false;
+            borrowBtn.textContent = 'Borrow';
+            alert('You have reached your borrow limit (6 books). Please return some books before borrowing more.');
+            return;
+        }
+        
+        // Call API through ApiService
+        await ApiService.borrowBook(bookId);
+
+        // Update only the button state
         borrowBtn.disabled = true;
         borrowBtn.textContent = 'Borrowed';
+        borrowBtn.classList.add('disabled');
+        
+    } catch (error) {
+        console.error('Borrow error:', error);
+        
+        const borrowBtn = document.getElementById('borrowBtn');
+        if (error.message.includes('already borrowed')) {
+            borrowBtn.disabled = true;
+            borrowBtn.textContent = 'Borrowed';
+            borrowBtn.classList.add('disabled');
+            alert('You have already borrowed this book.');
+        } else {
+            alert(`Failed to borrow book: ${error.message}`);
+            borrowBtn.disabled = false;
+            borrowBtn.textContent = 'Borrow';
+            borrowBtn.classList.remove('disabled');
+        }
     }
-    alert('Book borrowed successfully!');
 }
 
-function handleFavorite(bookId) {
-    const books = getBooks();
-    const book = books[bookId];
-    book.favorite = !book.favorite;
-    updateBook(bookId, book);
-    const favoriteBtn = document.getElementById('favoriteBtn');
-    if (book.favorite) favouriteBooks.append(book);
-    if (favoriteBtn) {
-        favoriteBtn.textContent = book.favorite ? '★ Favorited' : '☆ Add to Favorites';
-        favoriteBtn.classList.toggle('favorited', book.favorite);
+async function handleFavorite(bookId) {
+    try {
+        const favoriteBtn = document.getElementById('favoriteBtn');
+        
+        // Check if already favorited
+        const isFavorited = await ApiService.checkIfFavorited(bookId);
+        
+        if (isFavorited) {
+            // Remove from favorites
+            await ApiService.removeFavoriteBook(bookId);
+            favoriteBtn.textContent = '☆ Add to Favorites';
+            favoriteBtn.classList.remove('favorited');
+        } else {
+            // Add to favorites
+            await ApiService.addFavoriteBook(bookId);
+            favoriteBtn.textContent = '★ Favorited';
+            favoriteBtn.classList.add('favorited');
+        }
+    } catch (error) {
+        console.error('Favorite error:', error);
+        alert(`Failed to update favorites: ${error.message}`);
     }
 }
 
-
-window.renderBooksFromAPI = renderBooksFromAPI;
+// Expose bookManager globally if needed by other scripts
+// window.bookManager = bookManager;
 
