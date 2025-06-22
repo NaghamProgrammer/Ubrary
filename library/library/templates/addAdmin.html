@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Add New Book</title>
+    <link rel="stylesheet" href="../static/css/addAdmin.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <h2>Ubrary</h2>
+            </div>
+
+            <div class="navmenu">
+                <ul>
+                    <li><a href="adminPage.html">Home</a></li>
+                    <li class="active"><a href="addAdmin.html">Add</a></li>
+                    <li><a href="deletebook.html">Delete</a></li>
+                    <li><a href = "editAdmin.html">Edit</a></li>
+                </ul>
+            </div>
+            
+            <a href="../landingpage/index.html" class="auth-button">Log out</a>
+        </nav>
+    </header>
+
+    <main class="library-main">
+        <section class="form-section">
+            <div class="container">
+                <h2>Add New Book</h2>
+                <form class="library-form" id="addBookForm" action="#" method="POST">
+                    <div class="form-group">
+                        <label for="bookId">Book ID:</label>
+                        <input type="text" id="bookId" name="bookId" required 
+                               placeholder="Enter unique book ID">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label for="bookName">Title:</label>
+                            <input type="text" id="bookName" name="bookName" required 
+                                   placeholder="Enter book title">
+                        </div>
+                        
+                        <div class="form-group half-width">
+                            <label for="author">Author:</label>
+                            <input type="text" id="author" name="author" required 
+                                   placeholder="Enter author name">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label for="category">Category:</label>
+                            <select id="category" name="category" required>
+                                <option value="">Select category</option>
+                                <option value="fiction">Fiction</option>
+                                <option value="non-fiction">Non-Fiction</option>
+                                <option value="science">Science</option>
+                                <option value="history">History</option>
+                                <option value="fantasy">fantasy</option>
+                                <option value="Children'books">Children'books</option>
+                                <option value="self-help">self-help</option>
+                                <option value="philosophy">philosophy</option>
+                                <option value="technology">Technology</option>
+                                <option value="academic">academic</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group half-width">
+                            <label for="publishedDate">Published Date:</label>
+                            <input type="date" id="publishedDate" name="publishedDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description" rows="5" required
+                                  placeholder="Enter book description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="cover">Book Cover:</label>
+                        <input type="file" id="cover" name="cover" accept="image/*" required>
+                      </div>
+                      
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="add-btn">Add Book</button>
+                        <button type="reset" class="cancel-btn">Clear Form</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+  
+<script type="module" src="../user-adminpages/bookManager.mjs"></script>
+
+
+<script src="addAdmin.js"></script>
+
+</body>
+</html>
