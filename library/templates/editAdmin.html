@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Book - Ubrary</title>
+    <link rel="stylesheet" href="../static/css/editAdmin.css">
+    <style>
+        /* Additional styles for the ID hint */
+        .id-hint {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+        }
+        .search-container input {
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <h2>Ubrary</h2>
+            </div>
+            <div class="navmenu">
+                <ul>
+                    <li><a href="adminPage.html">Home</a></li>
+                    <li><a href="addAdmin.html">Add</a></li>
+                    <li><a href="deleteBook.html">Delete</a></li>
+                    <li class="active"><a href="editAdmin.html">Edit</a></li>
+                </ul>
+            </div>
+            <button href="index.html" class="auth-button">Log out</button>
+        </nav>
+    </header>
+
+    <main class="library-main">
+        <section class="form-section">
+            <div class="container">
+                <h2>Edit Book</h2>
+                <div id="message" class="message"></div>
+                <form class="library-form" id="editBookForm">
+                    <!-- Search by Book ID -->
+                    <div class="form-group search-box">
+                        <label for="searchId">Enter Book ID to Edit:</label>
+                        <div class="search-container">
+                            <input type="text" id="searchId" name="searchId" required 
+                                   placeholder="e.g. BK001, BKNEW123" 
+                                   title="Enter any valid book ID">
+                            <button type="button" class="search-btn">Search</button>
+                        </div>
+                        <p class="id-hint">Available IDs will appear after searching</p>
+                    </div>
+
+                    <!-- Editable Fields (initially hidden) -->
+                    <div id="editableFields" style="display: none; opacity: 0; transition: opacity 0.3s ease;">
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="bookName">Title:</label>
+                                <input type="text" id="bookName" name="bookName" required placeholder="Book title">
+                            </div>
+                            
+                            <div class="form-group half-width">
+                                <label for="author">Author:</label>
+                                <input type="text" id="author" name="author" required placeholder="Author name">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="category">Category:</label>
+                                <select id="category" name="category" required>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group half-width">
+                                <label for="publishedDate">Published Date:</label>
+                                <input type="date" id="publishedDate" name="publishedDate">
+                            </div>
+                        </div>
+
+                       
+                        <div class="form-group half-width">
+                            <label for="numberOfCopies">Number of Copies:</label>
+                            <input type="number" id="numberOfCopies" name="numberOfCopies" required min="1" placeholder="Available copies">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description">Description:</label>
+                            <textarea id="description" name="description" rows="5" placeholder="Book description"></textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="save-btn">Save Changes</button>
+                            <button type="reset" class="cancel-btn">Cancel</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="../static/js/api.js"></script>
+   <script src="../static/js/editAdmin.js"></script>
+       <script>
+                document
+        .getElementsByClassName('auth-button')[0]
+        .addEventListener('click', async function (){
+            try{
+                await ApiService.logout();
+                window.location.href="index.html";
+            }
+            catch(err){
+                console.log(err)
+            }
+        })
+    </script>
+
+</body>
+</html>

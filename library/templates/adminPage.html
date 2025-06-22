@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubrary - Admin Dashboard</title>
+    <link rel="stylesheet" href="../static/css/userPage.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <h2>Ubrary</h2>
+            </div>
+            <div class="navmenu">
+                <ul>
+                    <li class="active"><a href="adminPage.html">Home</a></li>
+                    <li><a href="addAdmin.html">Add</a></li>
+                    <li><a href="deletebook.html">Delete</a></li>
+                    <li><a href="editAdmin.html">Edit</a></li>
+                </ul>
+            </div>
+            <button href="index.html" class="auth-button">Log out</button>
+        </nav>
+    </header>
+
+    <div class="search-hero">
+        <div class="search-container">
+            <img src="../static/asset/magnifier.png" alt="Search" class="magnifier-icon">
+            <input type="text" id="search" placeholder="Search book by Title/Author/Category">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Available Books:</h2>
+        <div class="books-grid" id="booksGrid">
+            <!-- Books will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/bookManager.js"></script>
+    <script>
+        document
+        .getElementsByClassName('auth-button')[0]
+        .addEventListener('click', async function (){
+            try{
+                await ApiService.logout();
+                window.location.href="index.html";
+            }
+            catch(err){
+                console.log(err)
+            }
+        })
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search');
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && this.value.trim() !== '') {
+                    window.location.href = `searchResults.html?q=${encodeURIComponent(this.value.trim())}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories | Ubrary</title>
+    <link rel = "Stylesheet" href = "../static/css/Categories.css">
+    <script src="../static/js/api.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <li class="logo">
+          <h2>Ubrary</h2>
+        </li>
+
+        <li class="navmenu">
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="Categories.html" class="active" >Categories</a></li>
+            <li><a href="aboutus.html">About Us</a></li>
+            
+          </ul>
+        </li>
+
+        <li class="auth-buttons">
+          <a href="login.html" class="auth-button"
+            >Sign Up / Sign In</a
+          >
+        </li>
+    </nav>
+
+    <section class="categories-grid">
+      <div class="category-item">
+        <img src="../static/asset/AllBooks.png" width="80" height="80">
+        <a href="Categories.html">All</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Fiction.png" width="80" height="80">
+        <a href="Fiction.html" class="active">Fiction</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Non-Function.png" width="80" height="80">
+        <a href="Non-Fiction.html">Non-Fiction</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Science.png" width="80" height="80">
+        <a href="Science.html">Science</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Fantasy.jpg" width="80" height="80">
+        <a href="Fantasy.html">Fantasy</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/History.jpg" width="80" height="80">
+        <a href="History.html">History</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Philosophy.jpg" width="80" height="80">
+        <a href="Philosophy.html">Philosophy</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Self-help.jpg" width="80" height="80">
+        <a href="Self-help.html">Self-Help</a>
+      </div>
+      <div class="category-item">
+        <img src="../static/asset/Children'sBooks.jpg" width="80" height="80">
+        <a href="Children'sBooks.html">Children's Books</a>
+      </div>
+      <div class="category-item has-submenu-Technology">
+        <img src="../static/asset/Technology.jpg" width="80" height="80">
+        <a href="Technology.html">Technology</a>
+      </div>
+      <div class="category-item has-submenu-Academic">
+        <img src="../static/asset/Academic.jpg" width="80" height="80">
+        <a href="Academic.html">Academic</a>
+      </div>
+    </section>
+
+    <div class="books-grid"></div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const booksGrid = document.querySelector('.books-grid');
+        if (!booksGrid) return;
+        
+        booksGrid.innerHTML = '';
+        
+       
+        const categories = await ApiService.getCategories();
+        const fictionCategory = categories.find(cat => 
+            cat.name.toLowerCase() === 'fiction');
+        
+        if (!fictionCategory) {
+            booksGrid.innerHTML = '<p class="no-books">fiction category not found.</p>';
+            return;
+        }
+        
+        
+        const books = await ApiService.getBooks();
+        
+        if (!books || books.length === 0) {
+            booksGrid.innerHTML = '<p class="no-books">No books available at the moment.</p>';
+            return;
+        }
+        
+        
+        const fictionBooks = books.filter(book => {
+            
+            return book.categories && book.categories.includes(fictionCategory.id);
+        });
+
+        if (fictionBooks.length === 0) {
+            booksGrid.innerHTML = `
+                <p class="no-books">
+                    No fiction books found. 
+                   
+                </p>`;
+            return;
+        }
+        
+        booksGrid.innerHTML = '';
+        fictionBooks.forEach(book => {
+            const bookHTML = `
+                <div class="book">
+                    <a href="bookInfo.html?id=${book.id}">
+                        <img src="${book.cover_url || '../static/asset/placeholder.jpg'}" 
+                             alt="${book.title}" width="200" height="250">
+                    </a>
+                    <div class="book-info">
+                        <div class="title-author">
+                            <span class="title">${book.title}</span>
+                            <span class="author">${book.author}</span>
+                        </div>
+                      
+                    </div>
+                </div>
+            `;
+            booksGrid.insertAdjacentHTML('beforeend', bookHTML);
+        });
+        
+    } catch (error) {
+        console.error('Error loading fiction books:', error);
+        const booksGrid = document.querySelector('.books-grid');
+        if (booksGrid) {
+            booksGrid.innerHTML = `
+                <div class="error-message">
+                    <p>Error loading fiction books. Please try again later.</p>
+                    <small>${error.message || ''}</small>
+                </div>
+            `;
+        }
+    }
+});
+</script>
+    
+    <!-- Footer -->
+    <footer>
+      <div class="footer-simple">
+        <p>&copy; 2025 Ubrary, Inc. All rights reserved.</p>
+        <p>
+          <a href="#">Privacy</a> | <a href="#">Terms</a> |
+          <a href="#">Sitemap</a>
+        </p>
+      </div>
+    </footer>
+</body>
+</html>
