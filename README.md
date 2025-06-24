@@ -1,7 +1,5 @@
 # Ubrary - An Online Library System
 
-![Library](https://i.imgur.com/your-banner-image.png) <!-- You can replace this with a nice banner for your project -->
-
 Ubrary is a full-stack online library application designed to provide a seamless experience for both readers and administrators. It allows users to browse, borrow, and manage a vast collection of books through an intuitive web interface. The project is built with Django and utilizes the Django REST Framework to expose a powerful API.
 
 ## ✨ Features
