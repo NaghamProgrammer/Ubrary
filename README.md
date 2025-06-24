@@ -117,7 +117,6 @@ Don't forget to give the project a star! Thanks again!
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-(Note: You would need to add a LICENSE file to the repository)
 
 ---
 Made with ❤️ by The Ubrary Team
